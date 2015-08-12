@@ -18,7 +18,7 @@ Flycapture Include files path:
 Flycapture library files path:
   C:\Program Files\Point Grey Research\PGR FlyCapture\lib
 
-Flycapture library Input items
+Flycapture library Input items:
 	;pgrflycapturegui.lib;PGRFlyCapture.lib;
 
 
