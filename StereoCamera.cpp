@@ -293,7 +293,7 @@ bool CstereoCamera::AcquireFrame()
 #ifdef GetRawOpencvImg
 		cvImgC->imageData = (char*)rowIntColor;
 
-		//����cvImgCL��4ͨ���ģ�����ÿ���ڴ濽����ֵ�⣬������ֱ��ͨ��openCV�е�ROI��������
+		// If cvImgCL is 4-channel one, ROI in OpenCV is also available
 		cvSetImageROI(cvImgC,cvRect(0,0,imageCols,imageRows));
 		cvCopy(cvImgC,cvImgCR);
 		cvResetImageROI(cvImgC);
@@ -375,8 +375,8 @@ bool CstereoCamera::StereoMatch()
 		if(stereoStatus)
 		{
 			float	       x, y, z; 
-			int		       r, g, b;			//��ɫͼ����Ӧ���ص�ֵ��У������ͼ��
-			int		       nPoints = 0;		//�ɹ�ƥ���ĵ���
+			int		       r, g, b;	 
+			int		       nPoints = 0;		// Successfully matched number of points
 			int		       pixelinc ;
 			int		       i, j, k;
 			unsigned short*     row;
