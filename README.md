@@ -2,6 +2,7 @@
 Libraries Configuration
 
 (1)OpenCV library configurarion
+
 OpenCV Include files path
 
 OpenCV library files path
