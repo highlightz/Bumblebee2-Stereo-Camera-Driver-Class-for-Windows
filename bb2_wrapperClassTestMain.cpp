@@ -226,12 +226,24 @@ IplImage* pfR;
 IplImage* pframeL;
 IplImage* pframeR;
 IplImage* disp8;
+IplImage* vdisp;
+IplImage* udisp;
+
+void miscellaneous::drawInterestPointsOnImage( IplImage* src, int flag );
+void miscellaneous::drawInterestLinesOnImage( IplImage* src, int flag );
+void miscellaneous::computeUDisparity( IplImage* src, IplImage* dst );
+void miscellaneous::computeVDisparity( IplImage* src, IplImage* dst );
+void miscellaneous::houghTransform( cv::Mat& src );
 
 int main( )
 {
 	pfL = cvCreateImage( cvSize( WIDTH, HEIGHT ), 8, 3 );
 	pfR = cvCreateImage( cvSize( WIDTH, HEIGHT ), 8, 3 );
 	disp8 = cvCreateImage( cvSize( WIDTH, HEIGHT ), 8, 1 );
+	
+	const int maxDisp = 255;
+	udisp = cvCreateImage( cvSize( WIDTH, maxDisp ), 8, 1 );
+	vdisp = cvCreateImage( cvSize( maxDisp, HEIGHT ), 8, 1 );
 	
 	// m_camera.setDispRange( 0, 200 );
 
@@ -242,7 +254,7 @@ int main( )
 	}
 	else
 	{
-		// m_camera.showCameraInfo( );
+		m_camera.showCameraInfo( );
 		m_camera.EnableStereoMatch( );
 		while ( 1 )
 		{
@@ -253,14 +265,43 @@ int main( )
 				m_camera.Four2Three( pframeL, pfL );
 				m_camera.Four2Three( pframeR, pfR );
 
+				// Acquire the 8-bit disparity map from triclops
 				disp8 = m_camera.getStereo( );
+				// The wrapper version of disp8
+				// Note: no data is copied, it is pure wrapper.
+				miscellaneous::BwImage disp8_wrapper( disp8 );
 				
+				// Test the U-V disparity computing algorithm
+				miscellaneous::computeUDisparity( disp8, udisp );
+				miscellaneous::computeVDisparity( disp8, vdisp );
+				cvShowImage( "udisp", udisp );
+				cvShowImage( "vdisp", vdisp );
+				
+				// Test the hough transformation based line detection algorithm
+				cv::Mat iplWrapper( disp8, true );
+				miscellaneous::houghTransform( iplWrapper );
+				imshow( "lines", iplWrapper );
+				
+				// Display the 3 windows' average depth, respectively
 				m_camera.showAvrgDepth( );
+				
+				m_camera.showInterestPointsDepth( );
+				
+				m_camera.showInterestPoints3D( );
+				
+				miscellaneous::drawInterestPointsOnImage( pfR, 1 );
+				miscellaneous::drawInterestLinesOnImage( pfR, 1 );
 
+				miscellaneous::drawInterestPointsOnImage( disp8, 0 );
+				miscellaneous::drawInterestLinesOnImage( disp8, 0 );
+
+				miscellaneous::drawInterestPointsOnImage( pfL, 1 );
+				miscellaneous::drawInterestLinesOnImage( pfL, 1 );
+				
 				cvShowImage( "Left", pfL );
 				cvShowImage( "Right", pfR );
 				cvShowImage( "Disp8", disp8 );
-				
+
 				if ( cvWaitKey( 20 ) == 27 ) 
 				{
 				  break;
