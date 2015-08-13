@@ -136,7 +136,7 @@ namespace miscellaneous
 
 	// 4. Computes V-disparity based on the input disparity image
 	// maxDisp is needed
-	// Make a counting line by line, the number of columns of the resulting V-disparity is defined by maxDisp
+	// Make a counting row by row, the number of columns of the resulting V-disparity is defined by maxDisp
 	void computeVDisparity( IplImage* src, IplImage* dst )
 	{
 		for ( int rowComm = 0; rowComm < src->height; rowComm++ )
@@ -158,8 +158,9 @@ namespace miscellaneous
 		}
 	}
 
+	// 5.Computes U-disparity based on the input disparity image
 	// maxDisp is needed
-	// 逐列统计计算，需确定U视差图的行数，行数就是maxDisp
+	// Make a counting column by column, the number of rows of the resulting U-disparity is defined by maxDisp
 	void computeUDisparity( IplImage* src, IplImage* dst )
 	{
 		for ( int colComm = 0; colComm < src->width; colComm++ )
@@ -181,6 +182,7 @@ namespace miscellaneous
 		}
 	}
 
+	6. Detects lines in an image
 	void houghTransform( Mat& src )
 	{
 		const double pi = 3.14;
