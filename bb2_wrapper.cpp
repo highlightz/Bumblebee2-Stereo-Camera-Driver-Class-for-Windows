@@ -630,24 +630,25 @@ void bb2_wrapper::showInterestPointsDepth( ) const
 	cout << "Depth of the marks: " << endl;
 	for ( int i = 0; i < 5; i++ )
 	{
-		cout << interestPointsDepth[i] << "m" << '\t';	
+		cout << fifteenPointsDepth[i] << "m" << '\t';	
 	}
 	cout << endl;
 
 	for ( int i = 5; i < 10; i++ )
 	{
-		cout << interestPointsDepth[i] << "m" << '\t';	
+		cout << fifteenPointsDepth[i] << "m" << '\t';	
 	}
 	cout << endl;
 
 	for ( int i = 10; i < 15; i++ )
 	{
-		cout << interestPointsDepth[i] << "m" << '\t';	
+		cout << fifteenPointsDepth[i] << "m" << '\t';	
 	}
 	cout << endl;
 	cout << "--------------------------------------------";
 	cout << endl;
 }
+
 
 void bb2_wrapper::showInterestPoints3D( ) const
 {
@@ -656,19 +657,19 @@ void bb2_wrapper::showInterestPoints3D( ) const
 	
 	for ( int i = 0; i < 5; i++ )
 	{
-		cout << "(" << interestPoints3D[i].x << "m, " << interestPoints3D[i].y << "m, " << interestPoints3D[i].z << "m)" << '\t';
+		cout << "(" << fifteenPoints3D[i].x << "m, " << fifteenPoints3D[i].y << "m, " << fifteenPoints3D[i].z << "m)" << '\t';
 	}
 	cout << endl << endl;
 
 	for ( int i = 5; i < 10; i++ )
 	{
-		cout << "(" << interestPoints3D[i].x << "m, " << interestPoints3D[i].y << "m, " << interestPoints3D[i].z << "m)" << '\t';
+		cout << "(" << fifteenPoints3D[i].x << "m, " << fifteenPoints3D[i].y << "m, " << fifteenPoints3D[i].z << "m)" << '\t';
 	}
 	cout << endl << endl;
 
 	for ( int i = 10; i < 15; i++ )
 	{
-		cout << "(" << interestPoints3D[i].x << "m, " << interestPoints3D[i].y << "m, " << interestPoints3D[i].z << "m)" << '\t';
+		cout << "(" << fifteenPoints3D[i].x << "m, " << fifteenPoints3D[i].y << "m, " << fifteenPoints3D[i].z << "m)" << '\t';
 	}
 	cout << endl << endl;
 	cout << "-----------------------------------------------------------------------------------------------------------------------";
