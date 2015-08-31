@@ -6,10 +6,17 @@ using std::endl;
 using std::fixed;
 using std::setprecision;
 
-bb2_wrapper::bb2_wrapper( int sw, int sh ) : CstereoCamera( sw, sh ), interestPointsDepth( 15 ), interestPoints3D( 15 ), avrgDepth( 3 ), interestArea( 2500 )
+bb2_wrapper::bb2_wrapper( int sw, int sh ) 
+	: CstereoCamera( sw, sh ),  // Set definition
+	  fifteenPointsDepth( 15 ),  // Choose fifteen fixed points of scene 
+	  fifteenPoints3D( 15 ),  // Same as above 
+	  eP( 3 ), 
+	  ninePoints( 9 )
 {
 	minDisparity = 0;
 	maxDisparity = 64;
+	
+	groundImg.create( sh, sw, CV_8UC3 );
 }
 
 bb2_wrapper::~bb2_wrapper( )
@@ -370,10 +377,13 @@ bool bb2_wrapper::StereoMatch( )
 							pc.x = x; pc.y = y; pc.z = z; pc.r = r; pc.g = g; pc.b = b; pc.row = i; pc.col = j;
 
 							// If the current Point has the right indexes, then fill an interest point with this point info.
-							fillInterestPointsDepth( );
-							fillInterestPoints3D( );
-							fillAvrgDepth( );
-							//fillInterestArea( );
+							sampleGround( );
+							//bufferFifteenPointsDepth( );
+							//bufferFifteenPoints3D( );
+							//computeAvrgDepth( );
+							//sampleNinePoints( );
+							
+							useGround( );
 
 							// I guess this is only a qualitative representation of the relationship 
 							// between depth and disparity, therefore cannot be directly used for 
@@ -404,6 +414,9 @@ bool bb2_wrapper::StereoMatch( )
 		redColor = NULL;
 		greenColor = NULL;
 		blueColor = NULL;
+		
+		// A frame processed, a reference ground plane gotten.
+		bufferGround( );
 
 		return true;
 	}
@@ -436,7 +449,7 @@ PointCloud bb2_wrapper::getPointCloud( ) const
 	return pc;
 }
 
-void bb2_wrapper::fillInterestPointsDepth( )
+void bb2_wrapper::bufferFifteenPointsDepth( )
 {
 	// First line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 4 )
@@ -509,7 +522,7 @@ void bb2_wrapper::fillInterestPointsDepth( )
 	}
 }
 
-void bb2_wrapper::fillInterestPoints3D( )
+void bb2_wrapper::bufferFifteenPoints3D( )
 {
 	// First line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 4 )
@@ -614,7 +627,7 @@ void bb2_wrapper::fillInterestPoints3D( )
 
 void bb2_wrapper::showInterestPointsDepth( ) const
 {
-	cout << "视野中标记点处的深度值： " << endl;
+	cout << "Depth of the marks: " << endl;
 	for ( int i = 0; i < 5; i++ )
 	{
 		cout << interestPointsDepth[i] << "m" << '\t';	
@@ -639,7 +652,7 @@ void bb2_wrapper::showInterestPointsDepth( ) const
 void bb2_wrapper::showInterestPoints3D( ) const
 {
 	cout << fixed << setprecision( 2 );
-	cout << "视野中标记点处的三维坐标： " << endl;
+	cout << "3-D coordinates of the marks: " << endl;
 	
 	for ( int i = 0; i < 5; i++ )
 	{
@@ -662,56 +675,398 @@ void bb2_wrapper::showInterestPoints3D( ) const
 	cout << endl;
 }
 
-void bb2_wrapper::fillAvrgDepth( )
+void bb2_wrapper::computeAvrgDepth( )
 {
-	if ( pc.row > 10 && pc.row < 470 && pc.col > 10 && pc.col < 210 )
+	const int row_target = 240;
+
+	// This threshold is used to tell whether a point cloud is effective,
+	// because when the sum of the colors of a point cloud is too small,
+	// we can safely tell that a wrong match has happened.
+	const int rgb = 3;  
+
+	// Depth that is smaller than it is considered to be too near.
+	const float fixedDepth = 0.9f;
+
+	if ( pc.row > row_target && pc.row < 470 && pc.col > 10 && pc.col < 210 )
 	{
-		avrgDepth[0] += pc.z;
+		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+		{
+			eP[0].avrgDepth += pc.z;
+			eP[0].numOfEffectivePoints++;
+
+			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
+			{
+				eP[0].numPixelLessThanFixedDepthThreshold++;
+			}
+		}
+	}
+	
+	//if ( pc.row > 360 && pc.row < 480 && pc.col > 160 && pc.col < 280 )
+	//{
+	//	if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+	//	{
+	//		eP[0].avrgDepth += pc.z;
+	//		eP[0].numOfEffectivePoints++;
+	//	}
+	//}
+
+	if ( pc.row > row_target && pc.row < 470 && pc.col >= 210 && pc.col < 430 )
+	{
+		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+		{
+			eP[1].avrgDepth += pc.z;
+			eP[1].numOfEffectivePoints++;
+
+			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
+			{
+				eP[1].numPixelLessThanFixedDepthThreshold++;
+			}
+		}
 	}
 
-	if ( pc.row > 10 && pc.row < 470 && pc.col >= 210 && pc.col < 430 )
+	if ( pc.row > row_target && pc.row < 470 && pc.col >= 430 && pc.col < 630 )
 	{
-		avrgDepth[1] += pc.z;
-	}
+		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+		{
+			eP[2].avrgDepth += pc.z;
+			eP[2].numOfEffectivePoints++;
 
-	if ( pc.row > 10 && pc.row < 470 && pc.col >= 430 && pc.col < 630 )
-	{
-		avrgDepth[2] += pc.z;
+			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
+			{
+				eP[2].numPixelLessThanFixedDepthThreshold++;
+			}
+		}
 	}
 }
 
 void bb2_wrapper::showAvrgDepth( )
 {
-	cout << "三个窗口的平均深度值： ";
+	cout << "Counting info of Three windows: " << endl;
 	cout << fixed << setprecision( 2 );
 
-	cout << avrgDepth[0] / 200 / 460 << "m"<< '\t';	
-	cout << avrgDepth[1] / 220 / 460 << "m"<< '\t';	
-	cout << avrgDepth[2] / 200 / 460 << "m"<< '\t';	
+	cout << "Effective matches: " << eP[0].numOfEffectivePoints << ", " << eP[0].avrgDepth / eP[0].numOfEffectivePoints << "m, "<< "Near points: " << eP[0].numPixelLessThanFixedDepthThreshold << endl;	
+	cout << "Effective matches: " << eP[1].numOfEffectivePoints << ", " << eP[1].avrgDepth / eP[1].numOfEffectivePoints << "m, "<< "Near points: " << eP[1].numPixelLessThanFixedDepthThreshold << endl;	
+	cout << "Effective matches: " << eP[2].numOfEffectivePoints << ", " << eP[2].avrgDepth / eP[2].numOfEffectivePoints << "m, "<< "Near points: " << eP[2].numPixelLessThanFixedDepthThreshold << endl;	
 	
 	cout << endl;
-	cout << "----------------------------------------------";
+	cout << "---------------------------------------------------------------------------------------";
 	cout << endl;
 
 	for ( int i  = 0; i < 3; i++ )
 	{
-		avrgDepth[i] = 0;
+		eP[i].avrgDepth = 0;
+		eP[i].numOfEffectivePoints = 0;
 	}
 }
 
-void bb2_wrapper::fillInterestArea( )
+void bb2_wrapper::sampleNinePoints( )
 {
-	if ( pc.row >= 215 && pc.row < 265 && pc.col >= 295 && pc.col < 345 )
+	// The following samples are to be tuned according to practical test.
+	// Sample 0
+	if ( pc.row == stereoHight / 2 && pc.col == stereoWidth / 4 )
 	{
-		int index = ( pc.row - 215 ) * 50 + ( pc.col - 295 );
-		interestArea[index].x = pc.x;
-		interestArea[index].y = pc.y;
-		interestArea[index].z = pc.z;
+		ninePoints[0].x = pc.x;
+		ninePoints[0].y = pc.y;
+		ninePoints[0].z = pc.z;
+	}
+	// Sample 1
+	if ( pc.row == stereoHight / 2 && pc.col == stereoWidth / 2 )
+	{
+		ninePoints[1].x = pc.x;
+		ninePoints[1].y = pc.y;
+		ninePoints[1].z = pc.z;
+	}
+	// Sample 2
+	if ( pc.row == stereoHight / 2 && pc.col == stereoWidth * 3 / 4 )
+	{
+		ninePoints[2].x = pc.x;
+		ninePoints[2].y = pc.y;
+		ninePoints[2].z = pc.z;
+	}
+
+	// Sample 3
+	if ( pc.row == stereoHight * 5 / 8 && pc.col == stereoWidth / 4 )
+	{
+		ninePoints[3].x = pc.x;
+		ninePoints[3].y = pc.y;
+		ninePoints[3].z = pc.z;
+	}
+	// Sample 4
+	if ( pc.row == stereoHight * 5 / 8 && pc.col == stereoWidth / 2 )
+	{
+		ninePoints[4].x = pc.x;
+		ninePoints[4].y = pc.y;
+		ninePoints[4].z = pc.z;
+	}
+	// Sample 5
+	if ( pc.row == stereoHight * 5 / 8 && pc.col == stereoWidth * 3 / 4 )
+	{
+		ninePoints[5].x = pc.x;
+		ninePoints[5].y = pc.y;
+		ninePoints[5].z = pc.z;
+	}
+
+	// Sample 6
+	if ( pc.row == stereoHight * 7 / 8 && pc.col == stereoWidth / 4 )
+	{
+		ninePoints[6].x = pc.x;
+		ninePoints[6].y = pc.y;
+		ninePoints[6].z = pc.z;
+	}
+	// Sample 7
+	if ( pc.row == stereoHight * 7 / 8 && pc.col == stereoWidth / 2 )
+	{
+		ninePoints[7].x = pc.x;
+		ninePoints[7].y = pc.y;
+		ninePoints[7].z = pc.z;
+	}
+	// Sample 8
+	if ( pc.row == stereoHight * 7 / 8 && pc.col == stereoWidth * 3 / 4 )
+	{
+		ninePoints[8].x = pc.x;
+		ninePoints[8].y = pc.y;
+		ninePoints[8].z = pc.z;
 	}
 }
 
-vector< CvPoint3D32f > bb2_wrapper::showInterestArea( ) const
+vector< CvPoint3D32f > bb2_wrapper::getNinePoints( ) const
 {
-	return interestArea;
+	return ninePoints;
+}
+
+void bb2_wrapper::sampleGround( )
+{
+	const int sampleRadius = 15;
+	const int rgb = 3;  // This threshold is used to tell whether a point cloud is effective,
+	                    // because when the sum of the colors of a point cloud is too small,
+	                    // we can safely tell that a wrong match has happened.
+
+	// --------------------------------------------------------------------------------------------------------------------------------
+	// Point A( 320, 420 ) 
+	const int colA = 320;
+	const int rowA = 420;
+	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
+	if ( pc.row > rowA - sampleRadius && pc.row < rowA + sampleRadius && pc.col > colA - sampleRadius && pc.col < colA + sampleRadius )
+	{
+		if ( pc.b + pc.g + pc.r > rgb )
+		{
+			ground.planePointA.x += pc.x;
+			ground.planePointA.y += pc.y;
+			ground.planePointA.z += pc.z;
+			ground.numOfEffectivePointsAourndA++;
+		}
+	}
+
+	// --------------------------------------------------------------------------------------------------------------------------------
+	// Point B( 280, 460 ) 
+	const int colB = 280;
+	const int rowB = 460;
+	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
+	if ( pc.row > rowB - sampleRadius && pc.row < rowB + sampleRadius && pc.col > colB - sampleRadius && pc.col < colB + sampleRadius )
+	{
+		if ( pc.b + pc.g + pc.r > rgb )
+		{
+			ground.planePointB.x += pc.x;
+			ground.planePointB.y += pc.y;
+			ground.planePointB.z += pc.z;
+			ground.numOfEffectivePointsAourndB++;
+		}
+	}
+
+	// --------------------------------------------------------------------------------------------------------------------------------
+	// Point C( 360, 460 ) 
+	const int colC = 360;
+	const int rowC = 460;
+	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
+	if ( pc.row > rowC - sampleRadius && pc.row < rowC + sampleRadius && pc.col > colC - sampleRadius && pc.col < colC + sampleRadius )
+	{
+		if ( pc.b + pc.g + pc.r > rgb )
+		{
+			ground.planePointC.x += pc.x;
+			ground.planePointC.y += pc.y;
+			ground.planePointC.z += pc.z;
+			ground.numOfEffectivePointsAourndC++;
+		}
+	}
+}
+
+void bb2_wrapper::showSampledGround( )
+{
+	const float cameraHeight = 0.6f;
+	const float frontFixedDistanceA = 1.65f;
+	const float frontFixedDistanceBC = 1.5f;
+	const float leftFixedDistanceBC = 0.1f; 
+
+	// Show ground plane point A
+	if ( ground.numOfEffectivePointsAourndA != 0 )
+	{
+		cout << "(" << ground.planePointA.x / ground.numOfEffectivePointsAourndA << "," 
+			 << ground.planePointA.y / ground.numOfEffectivePointsAourndA << "," 
+			 << ground.planePointA.z / ground.numOfEffectivePointsAourndA << ")" << endl;
+	}
+	else
+	{
+		ground.planePointA.x = 0; 
+		ground.planePointA.y = -cameraHeight;
+		ground.planePointA.z = frontFixedDistanceA;
+	}
+	
+	// Show ground plane point B
+	if ( ground.numOfEffectivePointsAourndB != 0 )
+	{
+		cout << "(" << ground.planePointB.x / ground.numOfEffectivePointsAourndB << "," 
+			<< ground.planePointB.y / ground.numOfEffectivePointsAourndB << "," 
+			<< ground.planePointB.z / ground.numOfEffectivePointsAourndB << ")" << endl;
+	}
+	else 
+	{
+		ground.planePointB.x = -leftFixedDistanceBC; 
+		ground.planePointB.y = -cameraHeight;
+		ground.planePointB.z = frontFixedDistanceBC;
+	}
+	// Show ground plane point C
+	if ( ground.numOfEffectivePointsAourndC != 0 )
+	{
+		cout << "(" << ground.planePointC.x / ground.numOfEffectivePointsAourndC << "," 
+			<< ground.planePointC.y / ground.numOfEffectivePointsAourndC << "," 
+			<< ground.planePointC.z / ground.numOfEffectivePointsAourndC << ")" << endl;
+	}
+	else
+	{
+		ground.planePointC.x = leftFixedDistanceBC; 
+		ground.planePointC.y = -cameraHeight;
+		ground.planePointC.z = frontFixedDistanceBC;
+	}
+	
+	cout << "-------------------------------------------" << endl;
+
+	ground.planePointA.x = 0;
+	ground.planePointA.y = 0;
+	ground.planePointA.z = 0;
+	ground.numOfEffectivePointsAourndA = 0;
+
+	ground.planePointB.x = 0;
+	ground.planePointB.y = 0;
+	ground.planePointB.z = 0;
+	ground.numOfEffectivePointsAourndB = 0;
+
+	ground.planePointC.x = 0;
+	ground.planePointC.y = 0;
+	ground.planePointC.z = 0;
+	ground.numOfEffectivePointsAourndC = 0;
+}
+
+void bb2_wrapper::bufferGround( )
+{
+	// Represent the final reference plane
+
+	// Predefined ground parameters
+	// These params are due be be tuned according to practical road surface conditions.
+	const float cameraHeight = 0.6f;
+	const float frontFixedDistanceA = 1.65f;
+	const float frontFixedDistanceBC = 1.5f;
+	const float leftFixedDistanceBC = 0.1f; 
+		
+	// Update ground params when effective ground plane are detected
+	if ( ground.numOfEffectivePointsAourndA != 0 && ground.numOfEffectivePointsAourndB != 0 && ground.numOfEffectivePointsAourndC != 0 )
+	{
+		float dx1 = ground.planePointB.x / ground.numOfEffectivePointsAourndB - ground.planePointA.x / ground.numOfEffectivePointsAourndA;
+		float dy1 = ground.planePointB.y / ground.numOfEffectivePointsAourndB - ground.planePointA.y / ground.numOfEffectivePointsAourndA;
+		float dz1 = ground.planePointB.z / ground.numOfEffectivePointsAourndB - ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+		
+		float dx2 = ground.planePointC.x / ground.numOfEffectivePointsAourndC - ground.planePointA.x / ground.numOfEffectivePointsAourndA;
+		float dy2 = ground.planePointC.y / ground.numOfEffectivePointsAourndC - ground.planePointA.y / ground.numOfEffectivePointsAourndA;
+		float dz2 = ground.planePointC.z / ground.numOfEffectivePointsAourndC - ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+		
+		finalGroundPlane.coefs_0 = dy1*dz2-dy2*dz1;
+		finalGroundPlane.coefs_1 = dz1*dx2-dz2*dx1;
+		finalGroundPlane.coefs_2 = dx1*dy2-dx2*dy1;
+		finalGroundPlane.coefs_3 = -finalGroundPlane.coefs_0*ground.planePointA.x / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_1*ground.planePointA.y / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_2*ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+	}
+#if 0
+	else  // Predefined ground plane
+	{
+		//ground.planePointA.x = 0; 
+		//ground.planePointA.y = -cameraHeight;
+		//ground.planePointA.z = frontFixedDistanceA;
+
+		//ground.planePointB.x = -leftFixedDistanceBC; 
+		//ground.planePointB.y = -cameraHeight;
+		//ground.planePointB.z = frontFixedDistanceBC;
+
+		//ground.planePointC.x = leftFixedDistanceBC; 
+		//ground.planePointC.y = -cameraHeight;
+		//ground.planePointC.z = frontFixedDistanceBC;
+
+		///*refPlane.A = ( ground.planePointB.y - ground.planePointA.y ) * ( ground.planePointB.z - ground.planePointA.z ) - ( ground.planePointB.z - ground.planePointA.z ) * ( ground.planePointC.y - ground.planePointA.y );
+		//refPlane.B = ( ground.planePointC.x - ground.planePointA.x ) * ( ground.planePointB.z - ground.planePointA.z ) - ( ground.planePointB.x - ground.planePointA.x ) * ( ground.planePointC.z - ground.planePointA.z );
+		//refPlane.C = ( ground.planePointB.x - ground.planePointA.x ) * ( ground.planePointC.y - ground.planePointA.y ) - ( ground.planePointC.x - ground.planePointA.x ) * ( ground.planePointB.y - ground.planePointA.y );
+		//refPlane.planePoint = ground.planePointA;*/
+		//
+		//finalGroundPlane.dx1 = ground.planePointB.x - ground.planePointA.x;
+		//finalGroundPlane.dy1 = ground.planePointB.y - ground.planePointA.y;
+		//finalGroundPlane.dz1 = ground.planePointB.z - ground.planePointA.z;
+		//								 
+		//finalGroundPlane.dx2 = ground.planePointC.x - ground.planePointA.x;
+		//finalGroundPlane.dy2 = ground.planePointC.y - ground.planePointA.y;
+		//finalGroundPlane.dz2 = ground.planePointC.z - ground.planePointA.z;
+
+		//finalGroundPlane.coefs_0 = finalGroundPlane.dy1*finalGroundPlane.dz2-finalGroundPlane.dy2*finalGroundPlane.dz1;
+		//finalGroundPlane.coefs_1 = finalGroundPlane.dz1*finalGroundPlane.dx2-finalGroundPlane.dz2*finalGroundPlane.dx1;
+		//finalGroundPlane.coefs_2 = finalGroundPlane.dx1*finalGroundPlane.dy2-finalGroundPlane.dx2*finalGroundPlane.dy1;
+		//finalGroundPlane.coefs_3 = -finalGroundPlane.coefs_0*ground.planePointA.x / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_1*ground.planePointA.y / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_2*ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+	}
+#endif
+
+	// Reinitialize the ground points when counting work is finished
+	ground.planePointA.x = 0;
+	ground.planePointA.y = 0;
+	ground.planePointA.z = 0;
+	ground.numOfEffectivePointsAourndA = 0;
+
+	ground.planePointB.x = 0;
+	ground.planePointB.y = 0;
+	ground.planePointB.z = 0;
+	ground.numOfEffectivePointsAourndB = 0;
+
+	ground.planePointC.x = 0;
+	ground.planePointC.y = 0;
+	ground.planePointC.z = 0;
+	ground.numOfEffectivePointsAourndC = 0;
+}
+
+// Use the previously modeled ground plane
+void bb2_wrapper::useGround( )
+{	
+	// Thresholds
+	const int row_target = 240;  // Below this row are interest area.
+
+	// This threshold is used to tell whether a point cloud is effective,
+	// because when the sum of the colors of a point cloud is too small,
+	// we can safely tell that a wrong match has happened.
+	const int rgbSum = 3; 
+
+	const float belongToGroundThreshold = 0.03f;  // Unit: meter
+	// -------------------------------------------------------------------
+
+	// Normalize the norm vector of ground plane
+	float normed_vector = 1 / sqrt( finalGroundPlane.coefs_0 * finalGroundPlane.coefs_0 
+	                	          + finalGroundPlane.coefs_1 * finalGroundPlane.coefs_1
+								  + finalGroundPlane.coefs_2 * finalGroundPlane.coefs_2 );
+
+	if ( pc.row > row_target && pc.row < stereoHight && pc.col >= 0 && pc.col < stereoWidth )
+	{
+		if ( pc.b + pc.g + pc.r > rgbSum )  // No holes exist around here
+		{
+			float distanceToGround = abs( finalGroundPlane.coefs_0 * pc.x
+				                        + finalGroundPlane.coefs_1 * pc.y
+						                + finalGroundPlane.coefs_2 * pc.z 
+						                + finalGroundPlane.coefs_3 ) * normed_vector;
+			if ( distanceToGround < belongToGroundThreshold )
+			{
+				cv::circle( groundImg, cv::Point( pc.col, pc.row ), 1, cv::Scalar( 0, 255, 0 ), 1 );
+			}
+		}
+	}
 }
 
