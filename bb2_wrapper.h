@@ -17,6 +17,19 @@ struct PointCloud
 	int row, col;
 };
 
+// Such a struct object represents a neighborhood of an interest point,
+// which serves to determine the ground plane.
+// Three of them are needed.
+struct EffectivePoint
+{
+	float avrgDepth;
+	int numOfEffectivePoints;  // Number of effective point clouds in this area.
+	
+	// Number of near point clouds, used to determine a threshold,
+	// which tells the car there is danger in that direction.
+	int numPixelLessThanFixedDepthThreshold;   
+};
+
 class bb2_wrapper : public CstereoCamera
 {
 public:
@@ -44,24 +57,81 @@ public:
 	void showInterestPoints3D( ) const;
 
 	void showAvrgDepth( );
+	
+	void showSampledGround( );
 
-	vector< CvPoint3D32f >  showInterestArea( ) const;
+	vector< CvPoint3D32f >  getNinePoints( ) const;
+	
+	void useGround( );
+	
+	cv::Mat groundImg;  // Stores the ground plane info
 private:
 	int minDisparity;
 	int maxDisparity;
 	PointCloud pc;
 	
-	vector< float > interestPointsDepth;
-	void fillInterestPointsDepth( ); 
+	struct Plane3Points
+	{
+		CvPoint3D32f planePointA;
+		int numOfEffectivePointsAourndA;
 
-	vector < CvPoint3D32f > interestPoints3D;
-	void fillInterestPoints3D( );
+		CvPoint3D32f planePointB;
+		int numOfEffectivePointsAourndB;
 
-	vector< float > avrgDepth;
-	void fillAvrgDepth( );
+		CvPoint3D32f planePointC;
+		int numOfEffectivePointsAourndC;
+		
+		Plane3Points( )
+		{
+			planePointA.x = 0;
+			planePointA.y = 0;
+			planePointA.z = 0;
+			numOfEffectivePointsAourndA = 0;
 
-	vector< CvPoint3D32f > interestArea;
-	void fillInterestArea( );
+			planePointB.x = 0;
+			planePointB.y = 0;
+			planePointB.z = 0;
+			numOfEffectivePointsAourndB = 0;
+
+			planePointC.x = 0;
+			planePointC.y = 0;
+			planePointC.z = 0;
+			numOfEffectivePointsAourndC = 0;
+		}
+	} ground;
+	
+	// Stores the params of a plane equation
+	struct FinalGround
+	{
+		float coefs_0;
+		float coefs_1;
+		float coefs_2;
+		float coefs_3;
+		FinalGround( )
+		{
+			coefs_0 = 0.0f;
+			coefs_1 = 0.0f;
+			coefs_2 = 0.0f;
+			coefs_3 = 0.0f;
+		}
+	} finalGroundPlane;
+	
+	void sampleGround( );
+	
+	// Working mode: batch processing 
+	void bufferGround( );
+	
+	vector< float > fifteenPointsDepth;
+	void bufferFifteenPointsDepth( ); 
+
+	vector < CvPoint3D32f > fifteenPoints3D;
+	void bufferFifteenPoints3D( );
+
+	vector< EffectivePoint > eP;
+	void computeAvrgDepth( );
+
+	vector< CvPoint3D32f > ninePoints;
+	void sampleNinePoints( );
 };
 
 #endif
