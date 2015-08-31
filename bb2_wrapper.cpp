@@ -454,71 +454,71 @@ void bb2_wrapper::bufferFifteenPointsDepth( )
 	// First line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 4 )
 	{
-		interestPointsDepth[0] = pc.z;
+		fifteenPointsDepth[0] = pc.z;
 	}
 
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight / 4 )
 	{
-		interestPointsDepth[1] = pc.z;
+		fifteenPointsDepth[1] = pc.z;
 	}
 	if ( pc.col == stereoWidth / 2 && pc.row == stereoHight / 4 )
 	{
-		interestPointsDepth[2] = pc.z;
+		fifteenPointsDepth[2] = pc.z;
 	}
 	if ( pc.col == ( stereoWidth - stereoWidth / 4 ) && pc.row == stereoHight / 4 )
 	{
-		interestPointsDepth[3] = pc.z;
+		fifteenPointsDepth[3] = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight / 4 )
 	{
-		interestPointsDepth[4] = pc.z;
+		fifteenPointsDepth[4] = pc.z;
 	}
 
 	// Second line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 2 )
 	{
-		interestPointsDepth[5] = pc.z;
+		fifteenPointsDepth[5] = pc.z;
 	}
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight / 2 )
 	{
-		interestPointsDepth[6] = pc.z;
+		fifteenPointsDepth[6] = pc.z;
 	}
 	if ( pc.col == ( stereoWidth / 2 ) && pc.row == stereoHight / 2 )
 	{
-		interestPointsDepth[7] = pc.z;
+		fifteenPointsDepth[7] = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 && pc.row == stereoHight / 2 )
 	{
-		interestPointsDepth[8] = pc.z;
+		fifteenPointsDepth[8] = pc.z;
 	}
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight / 2 )
 	{
-		interestPointsDepth[9] = pc.z;
+		fifteenPointsDepth[9] = pc.z;
 	}
 
 	// Third line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPointsDepth[10] = pc.z;
+		fifteenPointsDepth[10] = pc.z;
 	}
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPointsDepth[11] = pc.z;
+		fifteenPointsDepth[11] = pc.z;
 	}
 	if ( pc.col == ( stereoWidth / 2 ) && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPointsDepth[12] = pc.z;
+		fifteenPointsDepth[12] = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPointsDepth[13] = pc.z;
+		fifteenPointsDepth[13] = pc.z;
 	}
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPointsDepth[14] = pc.z;
+		fifteenPointsDepth[14] = pc.z;
 	}
 }
 
@@ -527,101 +527,101 @@ void bb2_wrapper::bufferFifteenPoints3D( )
 	// First line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 4 )
 	{
-		interestPoints3D[0].x = pc.x;
-		interestPoints3D[0].y = pc.y;
-		interestPoints3D[0].z = pc.z;
+		fifteenPoints3D[0].x = pc.x;
+		fifteenPoints3D[0].y = pc.y;
+		fifteenPoints3D[0].z = pc.z;
 	}
 
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight / 4 )
 	{
-		interestPoints3D[1].x = pc.x;
-		interestPoints3D[1].y = pc.y;
-		interestPoints3D[1].z = pc.z;
+		fifteenPoints3D[1].x = pc.x;
+		fifteenPoints3D[1].y = pc.y;
+		fifteenPoints3D[1].z = pc.z;
 	}
 	if ( pc.col == stereoWidth / 2 && pc.row == stereoHight / 4 )
 	{
-		interestPoints3D[2].x = pc.x;
-		interestPoints3D[2].y = pc.y;
-		interestPoints3D[2].z = pc.z;
+		fifteenPoints3D[2].x = pc.x;
+		fifteenPoints3D[2].y = pc.y;
+		fifteenPoints3D[2].z = pc.z;
 	}
 	if ( pc.col == ( stereoWidth - stereoWidth / 4 ) && pc.row == stereoHight / 4 )
 	{
-		interestPoints3D[3].x = pc.x;
-		interestPoints3D[3].y = pc.y;
-		interestPoints3D[3].z = pc.z;
+		fifteenPoints3D[3].x = pc.x;
+		fifteenPoints3D[3].y = pc.y;
+		fifteenPoints3D[3].z = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight / 4 )
 	{
-		interestPoints3D[4].x = pc.x;
-		interestPoints3D[4].y = pc.y;
-		interestPoints3D[4].z = pc.z;
+		fifteenPoints3D[4].x = pc.x;
+		fifteenPoints3D[4].y = pc.y;
+		fifteenPoints3D[4].z = pc.z;
 	}
 
 	// Second line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight / 2 )
 	{
-		interestPoints3D[5].x = pc.x;
-		interestPoints3D[5].y = pc.y;
-		interestPoints3D[5].z = pc.z;
+		fifteenPoints3D[5].x = pc.x;
+		fifteenPoints3D[5].y = pc.y;
+		fifteenPoints3D[5].z = pc.z;
 	}
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight / 2 )
 	{
-		interestPoints3D[6].x = pc.x;
-		interestPoints3D[6].y = pc.y;
-		interestPoints3D[6].z = pc.z;
+		fifteenPoints3D[6].x = pc.x;
+		fifteenPoints3D[6].y = pc.y;
+		fifteenPoints3D[6].z = pc.z;
 	}
 	if ( pc.col == ( stereoWidth / 2 ) && pc.row == stereoHight / 2 )
 	{
-		interestPoints3D[7].x = pc.x;
-		interestPoints3D[7].y = pc.y;
-		interestPoints3D[7].z = pc.z;
+		fifteenPoints3D[7].x = pc.x;
+		fifteenPoints3D[7].y = pc.y;
+		fifteenPoints3D[7].z = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 && pc.row == stereoHight / 2 )
 	{
-		interestPoints3D[8].x = pc.x;
-		interestPoints3D[8].y = pc.y;
-		interestPoints3D[8].z = pc.z;
+		fifteenPoints3D[8].x = pc.x;
+		fifteenPoints3D[8].y = pc.y;
+		fifteenPoints3D[8].z = pc.z;
 	}
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight / 2 )
 	{
-		interestPoints3D[9].x = pc.x;
-		interestPoints3D[9].y = pc.y;
-		interestPoints3D[9].z = pc.z;
+		fifteenPoints3D[9].x = pc.x;
+		fifteenPoints3D[9].y = pc.y;
+		fifteenPoints3D[9].z = pc.z;
 	}
 
 	// Third line
 	if ( pc.col == stereoWidth / 4 - stereoWidth / 5 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPoints3D[10].x = pc.x;
-		interestPoints3D[10].y = pc.y;
-		interestPoints3D[10].z = pc.z;
+		fifteenPoints3D[10].x = pc.x;
+		fifteenPoints3D[10].y = pc.y;
+		fifteenPoints3D[10].z = pc.z;
 	}
 	if ( pc.col == stereoWidth / 4 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPoints3D[11].x = pc.x;
-		interestPoints3D[11].y = pc.y;
-		interestPoints3D[11].z = pc.z;
+		fifteenPoints3D[11].x = pc.x;
+		fifteenPoints3D[11].y = pc.y;
+		fifteenPoints3D[11].z = pc.z;
 	}
 	if ( pc.col == ( stereoWidth / 2 ) && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPoints3D[12].x = pc.x;
-		interestPoints3D[12].y = pc.y;
-		interestPoints3D[12].z = pc.z;
+		fifteenPoints3D[12].x = pc.x;
+		fifteenPoints3D[12].y = pc.y;
+		fifteenPoints3D[12].z = pc.z;
 	}
 
 	if ( pc.col == stereoWidth - stereoWidth / 4 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPoints3D[13].x = pc.x;
-		interestPoints3D[13].y = pc.y;
-		interestPoints3D[13].z = pc.z;
+		fifteenPoints3D[13].x = pc.x;
+		fifteenPoints3D[13].y = pc.y;
+		fifteenPoints3D[13].z = pc.z;
 	}
 	if ( pc.col == stereoWidth - stereoWidth / 4 + stereoWidth / 5 && pc.row == stereoHight - stereoHight / 4 )
 	{
-		interestPoints3D[14].x = pc.x;
-		interestPoints3D[14].y = pc.y;
-		interestPoints3D[14].z = pc.z;
+		fifteenPoints3D[14].x = pc.x;
+		fifteenPoints3D[14].y = pc.y;
+		fifteenPoints3D[14].z = pc.z;
 	}
 }
 
