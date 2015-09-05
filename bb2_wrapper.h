@@ -1,34 +1,22 @@
 #ifndef BB2_WRAPPER_H
 #define BB2_WRAPPER_H
 
-#include "StereoCamera.h"
-
+// System Includes
 #include <fstream>
 using std::ofstream;
 
 #include <vector>
 using std::vector;
 
+// OpenCV Includes
 #include <opencv2/opencv.hpp>
 using cv::Mat;
 
-// The point cloud refers to camera as a reference coordinate frame.
-struct PointCloud
-{
-	float x, y, z;
-	int r, g, b;
-	int row, col;
-};
+// Structures used
+#include "structures.h"
 
-// Such a struct object represents a neighborhood of an interest point,
-// which serves to determine the ground plane.
-// Three of them are needed.
-struct DepthWindow
-{
-	float avrgDepth;  // Average depth of a window
-	int numOfPoints;  // Number of points of this window
-	int numPixelLessThanFixedDepthThreshold;  // Number of points with depth less than a fixed value
-};
+// Camera Base Class
+#include "StereoCamera.h"
 
 class bb2_wrapper : public CstereoCamera
 {
@@ -71,6 +59,8 @@ public:
 
 	void showSampledGround( );
 
+	GroundPlane getGroundPlane( ) const;
+
 	void useGround( );
 
 	cv::Mat groundImg;
@@ -100,34 +90,19 @@ private:
 	// ------------------------------------------------------
 	// Derived data
 	// Sample three areas of points to compute a ground plane 
-	struct GroundPlanePoints
-	{
-		CvPoint3D32f planePointA;
-		int numOfEffectivePointsAourndA;
-
-		CvPoint3D32f planePointB;
-		int numOfEffectivePointsAourndB;
-
-		CvPoint3D32f planePointC;
-		int numOfEffectivePointsAourndC;
-	} groundPlanePoints;
+	GroundPlanePoints groundPlanePoints;
 	void sampleGroundPoints( );
 
 	// Ground plane computed from three fixed "points",
 	// specified by prior experience.
 	// Such a plane is determined by four parameters, namely,
 	// coefs_0 * x + coefs_1 * y + coefs_2 * z + coefs_3 = 0.
-	struct GroundPlane
-	{
-		float coefs_0;
-		float coefs_1;
-		float coefs_2;
-		float coefs_3;
-	} groundPlane;
+	GroundPlane groundPlane;
 	void genGroundPlane( );
 
 	vector< DepthWindow > eP;
 	void computeAvrgDepth( );
 	// ------------------------------------------------------
 };
-#endif
+
+#endif  // BB2_WRAPPER_H
