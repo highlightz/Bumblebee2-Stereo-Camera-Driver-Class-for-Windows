@@ -1,4 +1,5 @@
 // bb2_wrapper class
+#if 1
 #include "bb2_wrapper.h"
 
 #include <iostream>
@@ -1065,3 +1066,9 @@ vector< PointCloud > bb2_wrapper::getFramePointClouds( ) const
 {
 	return pc_seq;
 }
+
+GroundPlane bb2_wrapper::getGroundPlane( ) const
+{
+	return groundPlane;
+}
+#endif
