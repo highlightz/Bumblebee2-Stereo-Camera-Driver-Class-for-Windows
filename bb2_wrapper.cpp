@@ -1,3 +1,4 @@
+// bb2_wrapper class
 #include "bb2_wrapper.h"
 
 #include <iostream>
@@ -284,12 +285,14 @@ bool bb2_wrapper::StereoMatch( )
 		if(stereoStatus)
 		{
 			float	       x, y, z; 
-			int		       r, g, b;			// 彩色图像对应像素点值，校正后的图像
-			int		       nPoints = 0;		// 成功匹配的点数
+			int		       r, g, b;			// Corresponding color pixel value of rectified color image
+			int		       nPoints = 0;		// Number of successfully matched points                                      
 			int		       pixelinc ;
 			int		       i, j, k;
 			unsigned short*     row;
 			unsigned short      disparity;
+
+			pc_seq.clear( );  // Reinitialize frame point clouds
 
 			// Pointers to positions in the mono buffer that correspond to the beginning
 			// of the red, green and blue sections
@@ -374,10 +377,14 @@ bool bb2_wrapper::StereoMatch( )
 							}
 
 							// Put the current pixel info into a PointCloud struct
-							pc.x = x; pc.y = y; pc.z = z; pc.r = r; pc.g = g; pc.b = b; pc.row = i; pc.col = j;
+							pc.x = x; pc.y = y; pc.z = z; 
+							pc.r = r; pc.g = g; pc.b = b; 
+							pc.row = i; pc.col = j;
+
+							bufferFramePointClouds( );  // Whenever there is a point cloud coming, buffer it to the member vector.
 
 							// If the current Point has the right indexes, then fill an interest point with this point info.
-							sampleGround( );
+							sampleGroundPoints( );
 							//bufferFifteenPointsDepth( );
 							//bufferFifteenPoints3D( );
 							//computeAvrgDepth( );
@@ -416,7 +423,8 @@ bool bb2_wrapper::StereoMatch( )
 		blueColor = NULL;
 		
 		// A frame processed, a reference ground plane gotten.
-		bufferGround( );
+		// TODO: this operation should not have been in here.
+		genGroundPlane( );
 
 		return true;
 	}
@@ -625,7 +633,7 @@ void bb2_wrapper::bufferFifteenPoints3D( )
 	}
 }
 
-void bb2_wrapper::showInterestPointsDepth( ) const
+void bb2_wrapper::showFifteenPointsDepth( ) const
 {
 	cout << "Depth of the marks: " << endl;
 	for ( int i = 0; i < 5; i++ )
@@ -650,7 +658,7 @@ void bb2_wrapper::showInterestPointsDepth( ) const
 }
 
 
-void bb2_wrapper::showInterestPoints3D( ) const
+void bb2_wrapper::showFifteenPoints3D( ) const
 {
 	cout << fixed << setprecision( 2 );
 	cout << "3-D coordinates of the marks: " << endl;
@@ -680,20 +688,16 @@ void bb2_wrapper::computeAvrgDepth( )
 {
 	const int row_target = 240;
 
-	// This threshold is used to tell whether a point cloud is effective,
-	// because when the sum of the colors of a point cloud is too small,
-	// we can safely tell that a wrong match has happened.
-	const int rgb = 3;  
 
 	// Depth that is smaller than it is considered to be too near.
 	const float fixedDepth = 0.9f;
 
 	if ( pc.row > row_target && pc.row < 470 && pc.col > 10 && pc.col < 210 )
 	{
-		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+		
 		{
 			eP[0].avrgDepth += pc.z;
-			eP[0].numOfEffectivePoints++;
+			eP[0].numOfPoints++;
 
 			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
 			{
@@ -701,22 +705,12 @@ void bb2_wrapper::computeAvrgDepth( )
 			}
 		}
 	}
-	
-	//if ( pc.row > 360 && pc.row < 480 && pc.col > 160 && pc.col < 280 )
-	//{
-	//	if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
-	//	{
-	//		eP[0].avrgDepth += pc.z;
-	//		eP[0].numOfEffectivePoints++;
-	//	}
-	//}
 
 	if ( pc.row > row_target && pc.row < 470 && pc.col >= 210 && pc.col < 430 )
 	{
-		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
 		{
 			eP[1].avrgDepth += pc.z;
-			eP[1].numOfEffectivePoints++;
+			eP[1].numOfPoints++;
 
 			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
 			{
@@ -727,10 +721,10 @@ void bb2_wrapper::computeAvrgDepth( )
 
 	if ( pc.row > row_target && pc.row < 470 && pc.col >= 430 && pc.col < 630 )
 	{
-		if ( ( pc.r + pc.g + pc.b ) > rgb )  // If satisfied, a correct matching has happened.
+		
 		{
 			eP[2].avrgDepth += pc.z;
-			eP[2].numOfEffectivePoints++;
+			eP[2].numOfPoints++;
 
 			if ( pc.z < fixedDepth )  // Count the number of pixels with depth less than fixedDepth
 			{
@@ -745,9 +739,9 @@ void bb2_wrapper::showAvrgDepth( )
 	cout << "Counting info of Three windows: " << endl;
 	cout << fixed << setprecision( 2 );
 
-	cout << "Effective matches: " << eP[0].numOfEffectivePoints << ", " << eP[0].avrgDepth / eP[0].numOfEffectivePoints << "m, "<< "Near points: " << eP[0].numPixelLessThanFixedDepthThreshold << endl;	
-	cout << "Effective matches: " << eP[1].numOfEffectivePoints << ", " << eP[1].avrgDepth / eP[1].numOfEffectivePoints << "m, "<< "Near points: " << eP[1].numPixelLessThanFixedDepthThreshold << endl;	
-	cout << "Effective matches: " << eP[2].numOfEffectivePoints << ", " << eP[2].avrgDepth / eP[2].numOfEffectivePoints << "m, "<< "Near points: " << eP[2].numPixelLessThanFixedDepthThreshold << endl;	
+	cout << "Effective matches: " << eP[0].numOfPoints << ", " << eP[0].avrgDepth / eP[0].numOfPoints << "m, "<< "Near points: " << eP[0].numPixelLessThanFixedDepthThreshold << endl;	
+	cout << "Effective matches: " << eP[1].numOfPoints << ", " << eP[1].avrgDepth / eP[1].numOfPoints << "m, "<< "Near points: " << eP[1].numPixelLessThanFixedDepthThreshold << endl;	
+	cout << "Effective matches: " << eP[2].numOfPoints << ", " << eP[2].avrgDepth / eP[2].numOfPoints << "m, "<< "Near points: " << eP[2].numPixelLessThanFixedDepthThreshold << endl;	
 	
 	cout << endl;
 	cout << "---------------------------------------------------------------------------------------";
@@ -756,7 +750,7 @@ void bb2_wrapper::showAvrgDepth( )
 	for ( int i  = 0; i < 3; i++ )
 	{
 		eP[i].avrgDepth = 0;
-		eP[i].numOfEffectivePoints = 0;
+		eP[i].numOfPoints = 0;
 	}
 }
 
@@ -835,13 +829,10 @@ vector< CvPoint3D32f > bb2_wrapper::getNinePoints( ) const
 	return ninePoints;
 }
 
-void bb2_wrapper::sampleGround( )
+void bb2_wrapper::sampleGroundPoints( )
 {
-	const int sampleRadius = 15;
-	const int rgb = 3;  // This threshold is used to tell whether a point cloud is effective,
-	                    // because when the sum of the colors of a point cloud is too small,
-	                    // we can safely tell that a wrong match has happened.
-
+	const int sampleRadius = 85;
+	
 	// --------------------------------------------------------------------------------------------------------------------------------
 	// Point A( 320, 420 ) 
 	const int colA = 320;
@@ -849,13 +840,10 @@ void bb2_wrapper::sampleGround( )
 	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
 	if ( pc.row > rowA - sampleRadius && pc.row < rowA + sampleRadius && pc.col > colA - sampleRadius && pc.col < colA + sampleRadius )
 	{
-		if ( pc.b + pc.g + pc.r > rgb )
-		{
-			ground.planePointA.x += pc.x;
-			ground.planePointA.y += pc.y;
-			ground.planePointA.z += pc.z;
-			ground.numOfEffectivePointsAourndA++;
-		}
+		groundPlanePoints.planePointA.x += pc.x;
+		groundPlanePoints.planePointA.y += pc.y;
+		groundPlanePoints.planePointA.z += pc.z;
+		groundPlanePoints.numOfEffectivePointsAourndA++;
 	}
 
 	// --------------------------------------------------------------------------------------------------------------------------------
@@ -865,13 +853,10 @@ void bb2_wrapper::sampleGround( )
 	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
 	if ( pc.row > rowB - sampleRadius && pc.row < rowB + sampleRadius && pc.col > colB - sampleRadius && pc.col < colB + sampleRadius )
 	{
-		if ( pc.b + pc.g + pc.r > rgb )
-		{
-			ground.planePointB.x += pc.x;
-			ground.planePointB.y += pc.y;
-			ground.planePointB.z += pc.z;
-			ground.numOfEffectivePointsAourndB++;
-		}
+		groundPlanePoints.planePointB.x += pc.x;
+		groundPlanePoints.planePointB.y += pc.y;
+		groundPlanePoints.planePointB.z += pc.z;
+		groundPlanePoints.numOfEffectivePointsAourndB++;
 	}
 
 	// --------------------------------------------------------------------------------------------------------------------------------
@@ -881,13 +866,10 @@ void bb2_wrapper::sampleGround( )
 	// If the current point cloud locates in the neighborhood of Point A, then it is considered.
 	if ( pc.row > rowC - sampleRadius && pc.row < rowC + sampleRadius && pc.col > colC - sampleRadius && pc.col < colC + sampleRadius )
 	{
-		if ( pc.b + pc.g + pc.r > rgb )
-		{
-			ground.planePointC.x += pc.x;
-			ground.planePointC.y += pc.y;
-			ground.planePointC.z += pc.z;
-			ground.numOfEffectivePointsAourndC++;
-		}
+		groundPlanePoints.planePointC.x += pc.x;
+		groundPlanePoints.planePointC.y += pc.y;
+		groundPlanePoints.planePointC.z += pc.z;
+		groundPlanePoints.numOfEffectivePointsAourndC++;
 	}
 }
 
@@ -899,65 +881,63 @@ void bb2_wrapper::showSampledGround( )
 	const float leftFixedDistanceBC = 0.1f; 
 
 	// Show ground plane point A
-	if ( ground.numOfEffectivePointsAourndA != 0 )
+	if ( groundPlanePoints.numOfEffectivePointsAourndA != 0 )
 	{
-		cout << "(" << ground.planePointA.x / ground.numOfEffectivePointsAourndA << "," 
-			 << ground.planePointA.y / ground.numOfEffectivePointsAourndA << "," 
-			 << ground.planePointA.z / ground.numOfEffectivePointsAourndA << ")" << endl;
+		cout << "(" << groundPlanePoints.planePointA.x / groundPlanePoints.numOfEffectivePointsAourndA << "," 
+			        << groundPlanePoints.planePointA.y / groundPlanePoints.numOfEffectivePointsAourndA << "," 
+			        << groundPlanePoints.planePointA.z / groundPlanePoints.numOfEffectivePointsAourndA << ")" << endl;
 	}
 	else
 	{
-		ground.planePointA.x = 0; 
-		ground.planePointA.y = -cameraHeight;
-		ground.planePointA.z = frontFixedDistanceA;
+		groundPlanePoints.planePointA.x = 0; 
+		groundPlanePoints.planePointA.y = -cameraHeight;
+		groundPlanePoints.planePointA.z = frontFixedDistanceA;
 	}
 	
 	// Show ground plane point B
-	if ( ground.numOfEffectivePointsAourndB != 0 )
+	if ( groundPlanePoints.numOfEffectivePointsAourndB != 0 )
 	{
-		cout << "(" << ground.planePointB.x / ground.numOfEffectivePointsAourndB << "," 
-			<< ground.planePointB.y / ground.numOfEffectivePointsAourndB << "," 
-			<< ground.planePointB.z / ground.numOfEffectivePointsAourndB << ")" << endl;
+		cout << "(" << groundPlanePoints.planePointB.x / groundPlanePoints.numOfEffectivePointsAourndB << "," 
+			        << groundPlanePoints.planePointB.y / groundPlanePoints.numOfEffectivePointsAourndB << "," 
+			        << groundPlanePoints.planePointB.z / groundPlanePoints.numOfEffectivePointsAourndB << ")" << endl;
 	}
 	else 
 	{
-		ground.planePointB.x = -leftFixedDistanceBC; 
-		ground.planePointB.y = -cameraHeight;
-		ground.planePointB.z = frontFixedDistanceBC;
+		groundPlanePoints.planePointB.x = -leftFixedDistanceBC; 
+		groundPlanePoints.planePointB.y = -cameraHeight;
+		groundPlanePoints.planePointB.z = frontFixedDistanceBC;
 	}
 	// Show ground plane point C
-	if ( ground.numOfEffectivePointsAourndC != 0 )
+	if ( groundPlanePoints.numOfEffectivePointsAourndC != 0 )
 	{
-		cout << "(" << ground.planePointC.x / ground.numOfEffectivePointsAourndC << "," 
-			<< ground.planePointC.y / ground.numOfEffectivePointsAourndC << "," 
-			<< ground.planePointC.z / ground.numOfEffectivePointsAourndC << ")" << endl;
+		cout << "(" << groundPlanePoints.planePointC.x / groundPlanePoints.numOfEffectivePointsAourndC << "," 
+			        << groundPlanePoints.planePointC.y / groundPlanePoints.numOfEffectivePointsAourndC << "," 
+			        << groundPlanePoints.planePointC.z / groundPlanePoints.numOfEffectivePointsAourndC << ")" << endl;
 	}
 	else
 	{
-		ground.planePointC.x = leftFixedDistanceBC; 
-		ground.planePointC.y = -cameraHeight;
-		ground.planePointC.z = frontFixedDistanceBC;
+		groundPlanePoints.planePointC.x = leftFixedDistanceBC; 
+		groundPlanePoints.planePointC.y = -cameraHeight;
+		groundPlanePoints.planePointC.z = frontFixedDistanceBC;
 	}
-	
-	cout << "-------------------------------------------" << endl;
 
-	ground.planePointA.x = 0;
-	ground.planePointA.y = 0;
-	ground.planePointA.z = 0;
-	ground.numOfEffectivePointsAourndA = 0;
+	groundPlanePoints.planePointA.x = 0;
+	groundPlanePoints.planePointA.y = 0;
+	groundPlanePoints.planePointA.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndA = 0;
 
-	ground.planePointB.x = 0;
-	ground.planePointB.y = 0;
-	ground.planePointB.z = 0;
-	ground.numOfEffectivePointsAourndB = 0;
+	groundPlanePoints.planePointB.x = 0;
+	groundPlanePoints.planePointB.y = 0;
+	groundPlanePoints.planePointB.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndB = 0;
 
-	ground.planePointC.x = 0;
-	ground.planePointC.y = 0;
-	ground.planePointC.z = 0;
-	ground.numOfEffectivePointsAourndC = 0;
+	groundPlanePoints.planePointC.x = 0;
+	groundPlanePoints.planePointC.y = 0;
+	groundPlanePoints.planePointC.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndC = 0;
 }
 
-void bb2_wrapper::bufferGround( )
+void bb2_wrapper::genGroundPlane( )
 {
 	// Represent the final reference plane
 
@@ -969,20 +949,20 @@ void bb2_wrapper::bufferGround( )
 	const float leftFixedDistanceBC = 0.1f; 
 		
 	// Update ground params when effective ground plane are detected
-	if ( ground.numOfEffectivePointsAourndA != 0 && ground.numOfEffectivePointsAourndB != 0 && ground.numOfEffectivePointsAourndC != 0 )
+	if ( groundPlanePoints.numOfEffectivePointsAourndA != 0 && groundPlanePoints.numOfEffectivePointsAourndB != 0 && groundPlanePoints.numOfEffectivePointsAourndC != 0 )
 	{
-		float dx1 = ground.planePointB.x / ground.numOfEffectivePointsAourndB - ground.planePointA.x / ground.numOfEffectivePointsAourndA;
-		float dy1 = ground.planePointB.y / ground.numOfEffectivePointsAourndB - ground.planePointA.y / ground.numOfEffectivePointsAourndA;
-		float dz1 = ground.planePointB.z / ground.numOfEffectivePointsAourndB - ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+		float dx1 = groundPlanePoints.planePointB.x / groundPlanePoints.numOfEffectivePointsAourndB - groundPlanePoints.planePointA.x / groundPlanePoints.numOfEffectivePointsAourndA;
+		float dy1 = groundPlanePoints.planePointB.y / groundPlanePoints.numOfEffectivePointsAourndB - groundPlanePoints.planePointA.y / groundPlanePoints.numOfEffectivePointsAourndA;
+		float dz1 = groundPlanePoints.planePointB.z / groundPlanePoints.numOfEffectivePointsAourndB - groundPlanePoints.planePointA.z / groundPlanePoints.numOfEffectivePointsAourndA;
+																																			  
+		float dx2 = groundPlanePoints.planePointC.x / groundPlanePoints.numOfEffectivePointsAourndC - groundPlanePoints.planePointA.x / groundPlanePoints.numOfEffectivePointsAourndA;
+		float dy2 = groundPlanePoints.planePointC.y / groundPlanePoints.numOfEffectivePointsAourndC - groundPlanePoints.planePointA.y / groundPlanePoints.numOfEffectivePointsAourndA;
+		float dz2 = groundPlanePoints.planePointC.z / groundPlanePoints.numOfEffectivePointsAourndC - groundPlanePoints.planePointA.z / groundPlanePoints.numOfEffectivePointsAourndA;
 		
-		float dx2 = ground.planePointC.x / ground.numOfEffectivePointsAourndC - ground.planePointA.x / ground.numOfEffectivePointsAourndA;
-		float dy2 = ground.planePointC.y / ground.numOfEffectivePointsAourndC - ground.planePointA.y / ground.numOfEffectivePointsAourndA;
-		float dz2 = ground.planePointC.z / ground.numOfEffectivePointsAourndC - ground.planePointA.z / ground.numOfEffectivePointsAourndA;
-		
-		finalGroundPlane.coefs_0 = dy1*dz2-dy2*dz1;
-		finalGroundPlane.coefs_1 = dz1*dx2-dz2*dx1;
-		finalGroundPlane.coefs_2 = dx1*dy2-dx2*dy1;
-		finalGroundPlane.coefs_3 = -finalGroundPlane.coefs_0*ground.planePointA.x / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_1*ground.planePointA.y / ground.numOfEffectivePointsAourndA-finalGroundPlane.coefs_2*ground.planePointA.z / ground.numOfEffectivePointsAourndA;
+		groundPlane.coefs_0 = dy1*dz2-dy2*dz1;
+		groundPlane.coefs_1 = dz1*dx2-dz2*dx1;
+		groundPlane.coefs_2 = dx1*dy2-dx2*dy1;
+		groundPlane.coefs_3 = -groundPlane.coefs_0*groundPlanePoints.planePointA.x / groundPlanePoints.numOfEffectivePointsAourndA-groundPlane.coefs_1*groundPlanePoints.planePointA.y / groundPlanePoints.numOfEffectivePointsAourndA-groundPlane.coefs_2*groundPlanePoints.planePointA.z / groundPlanePoints.numOfEffectivePointsAourndA;
 	}
 #if 0
 	else  // Predefined ground plane
@@ -1020,20 +1000,20 @@ void bb2_wrapper::bufferGround( )
 #endif
 
 	// Reinitialize the ground points when counting work is finished
-	ground.planePointA.x = 0;
-	ground.planePointA.y = 0;
-	ground.planePointA.z = 0;
-	ground.numOfEffectivePointsAourndA = 0;
+	groundPlanePoints.planePointA.x = 0;
+	groundPlanePoints.planePointA.y = 0;
+	groundPlanePoints.planePointA.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndA = 0;
 
-	ground.planePointB.x = 0;
-	ground.planePointB.y = 0;
-	ground.planePointB.z = 0;
-	ground.numOfEffectivePointsAourndB = 0;
+	groundPlanePoints.planePointB.x = 0;
+	groundPlanePoints.planePointB.y = 0;
+	groundPlanePoints.planePointB.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndB = 0;
 
-	ground.planePointC.x = 0;
-	ground.planePointC.y = 0;
-	ground.planePointC.z = 0;
-	ground.numOfEffectivePointsAourndC = 0;
+	groundPlanePoints.planePointC.x = 0;
+	groundPlanePoints.planePointC.y = 0;
+	groundPlanePoints.planePointC.z = 0;
+	groundPlanePoints.numOfEffectivePointsAourndC = 0;
 }
 
 // Use the previously modeled ground plane
@@ -1051,18 +1031,18 @@ void bb2_wrapper::useGround( )
 	// -------------------------------------------------------------------
 
 	// Normalize the norm vector of ground plane
-	float normed_vector = 1 / sqrt( finalGroundPlane.coefs_0 * finalGroundPlane.coefs_0 
-	                	          + finalGroundPlane.coefs_1 * finalGroundPlane.coefs_1
-								  + finalGroundPlane.coefs_2 * finalGroundPlane.coefs_2 );
+	float normed_vector = 1 / sqrt( groundPlane.coefs_0 *groundPlane.coefs_0 
+	                	          + groundPlane.coefs_1 *groundPlane.coefs_1
+								  + groundPlane.coefs_2 *groundPlane.coefs_2 );
 
 	if ( pc.row > row_target && pc.row < stereoHight && pc.col >= 0 && pc.col < stereoWidth )
 	{
 		if ( pc.b + pc.g + pc.r > rgbSum )  // No holes exist around here
 		{
-			float distanceToGround = abs( finalGroundPlane.coefs_0 * pc.x
-				                        + finalGroundPlane.coefs_1 * pc.y
-						                + finalGroundPlane.coefs_2 * pc.z 
-						                + finalGroundPlane.coefs_3 ) * normed_vector;
+			float distanceToGround = abs( groundPlane.coefs_0 * pc.x
+				                        + groundPlane.coefs_1 * pc.y
+						                + groundPlane.coefs_2 * pc.z 
+						                + groundPlane.coefs_3 ) * normed_vector;
 			if ( distanceToGround < belongToGroundThreshold )
 			{
 				cv::circle( groundImg, cv::Point( pc.col, pc.row ), 1, cv::Scalar( 0, 255, 0 ), 1 );
@@ -1071,3 +1051,17 @@ void bb2_wrapper::useGround( )
 	}
 }
 
+void bb2_wrapper::bufferFramePointClouds( )
+{
+	// Constraints
+	const int row_target = 240;
+	if ( pc.row > row_target )
+	{
+		pc_seq.push_back( pc );
+	}
+}
+
+vector< PointCloud > bb2_wrapper::getFramePointClouds( ) const
+{
+	return pc_seq;
+}
