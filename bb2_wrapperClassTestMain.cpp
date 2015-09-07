@@ -182,7 +182,7 @@ namespace miscellaneous
 		}
 	}
 
-	6. Detects lines in an image
+	//6. Detects lines in an image
 	void houghTransform( Mat& src )
 	{
 		const double pi = 3.14;
